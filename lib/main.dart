@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart'; // Pastikan import ini ada
+import 'login_page.dart';
+import 'signup_page.dart'; // pastikan nama file kamu benar (sign_up_page.dart)
 
 void main() {
   runApp(const MyApp());
@@ -15,11 +16,18 @@ class MyApp extends StatelessWidget {
       title: 'Fintrack',
       theme: ThemeData(
         primarySwatch: Colors.red,
-        fontFamily: 'Arial', // Ganti dengan font pilihanmu (misal Poppins)
+        fontFamily: 'Arial',
         useMaterial3: true,
       ),
-      // Arahkan home pertama kali ke LoginPage
+
+      // Halaman pertama kali dibuka
       home: const LoginPage(),
+
+      // Routing
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const SignUpPage(),
+      },
     );
   }
 }
