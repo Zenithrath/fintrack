@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
-import 'signup_page.dart'; // pastikan nama file kamu benar (sign_up_page.dart)
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+import 'login_page.dart';
+import 'signup_page.dart';
+import 'profile_page.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
@@ -16,18 +26,16 @@ class MyApp extends StatelessWidget {
       title: 'Fintrack',
       theme: ThemeData(
         primarySwatch: Colors.red,
-        fontFamily: 'Arial',
         useMaterial3: true,
       ),
 
-      // Halaman pertama kali dibuka
       home: const LoginPage(),
 
-      // Routing
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
+        '/profile': (context) => const ProfilePage(),
       },
     );
-  }
+  } 
 }
