@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -11,6 +12,36 @@ class _SignUpPageState extends State<SignUpPage> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // 🟢🔥 FUNCTION SIGN UP (DITAMBAHKAN)
+  Future<void> signUp() async {
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      if (email.isEmpty || password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Email dan password wajib diisi")),
+        );
+        return;
+      }
+
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Akun berhasil dibuat!")));
+
+      Navigator.pushReplacementNamed(context, '/login');
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message ?? "Terjadi kesalahan")));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,10 +114,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       const SizedBox(height: 6),
                       const Text(
                         "Create your financial account",
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       const SizedBox(height: 30),
 
@@ -115,21 +143,18 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 30),
 
-                      // Sign Up Button
+                      // Sign Up Button (DIUBAH 1 BARIS)
                       Container(
                         width: double.infinity,
                         height: 52,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
                           gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF8B1D2F),
-                              Color(0xFF6C1323),
-                            ],
+                            colors: [Color(0xFF8B1D2F), Color(0xFF6C1323)],
                           ),
                         ),
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: signUp, // 🔥 panggil function signUp
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -154,8 +179,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         children: [
                           Expanded(child: Divider(color: Colors.grey[300])),
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: Text(
                               "OR",
                               style: TextStyle(
@@ -176,13 +200,10 @@ class _SignUpPageState extends State<SignUpPage> {
                         children: [
                           const Text(
                             "Already have an account? ",
-                            style: TextStyle(
-                              color: Colors.black54,
-                            ),
+                            style: TextStyle(color: Colors.black54),
                           ),
                           GestureDetector(
-                            onTap: () =>
-                                Navigator.pushNamed(context, '/login'),
+                            onTap: () => Navigator.pushNamed(context, '/login'),
                             child: const Text(
                               "Login",
                               style: TextStyle(
@@ -192,10 +213,10 @@ class _SignUpPageState extends State<SignUpPage> {
                             ),
                           ),
                         ],
-                      )
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),

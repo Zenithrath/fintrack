@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
-import 'add_transaction_page.dart'; // Pastikan file ini ada
-import 'recap_page.dart'; // Pastikan file ini ada
+import 'add_transaction_page.dart';
+import 'recap_page.dart';
+import 'profile_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  double totalBalance = 0;
+  double totalIncome = 0;
+  double totalExpense = 0;
+
+  @override
   Widget build(BuildContext context) {
-    // Definisi Warna
     final Color bgRed = const Color(0xFF8B1D2F);
     final Color darkRed = const Color(0xFF570F1A);
-
-    // PERBAIKAN: Menggunakan withValues(alpha: ...) menggantikan withOpacity
     final Color cardBalanceColor = Colors.white.withValues(alpha: 0.15);
 
     return Scaffold(
@@ -34,7 +41,7 @@ class HomePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- HEADER (Hallo Moetia) ---
+                    // HEADER
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -53,31 +60,40 @@ class HomePage extends StatelessWidget {
                             Text(
                               "Welcome back to Fintrack",
                               style: TextStyle(
-                                // PERBAIKAN: withValues
                                 color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 12,
                               ),
                             ),
                           ],
                         ),
-                        // Avatar Icon
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            // PERBAIKAN: withValues
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProfilePage(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                            ),
                           ),
-                          child: const Icon(Icons.person, color: Colors.white),
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
 
-                    // --- TOTAL BALANCE CARD (Link ke RecapPage) ---
+                    // TOTAL BALANCE CARD
                     GestureDetector(
                       onTap: () {
-                        // Navigasi ke Halaman Rekap
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -92,7 +108,6 @@ class HomePage extends StatelessWidget {
                           color: cardBalanceColor,
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            // PERBAIKAN: withValues
                             color: Colors.white.withValues(alpha: 0.1),
                           ),
                         ),
@@ -102,14 +117,13 @@ class HomePage extends StatelessWidget {
                             Text(
                               "Total Balance",
                               style: TextStyle(
-                                // PERBAIKAN: withValues
                                 color: Colors.white.withValues(alpha: 0.8),
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              "Rp 12.450.000",
-                              style: TextStyle(
+                            Text(
+                              "Rp ${totalBalance.toStringAsFixed(0)}",
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
@@ -124,7 +138,6 @@ class HomePage extends StatelessWidget {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    // PERBAIKAN: withValues
                                     color: Colors.green.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -150,7 +163,6 @@ class HomePage extends StatelessWidget {
                                 Text(
                                   "from last month",
                                   style: TextStyle(
-                                    // PERBAIKAN: withValues
                                     color: Colors.white.withValues(alpha: 0.6),
                                     fontSize: 12,
                                   ),
@@ -163,36 +175,35 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // --- MENU ROW (Income, Expense, Savings) ---
+                    // MENU ROW
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildMenuCard(
                           "Income",
-                          "Rp 5.680.000",
+                          "Rp ${totalIncome.toStringAsFixed(0)}",
                           Icons.arrow_downward,
                         ),
                         _buildMenuCard(
                           "Expenses",
-                          "Rp 3.240.000",
+                          "Rp ${totalExpense.toStringAsFixed(0)}",
                           Icons.arrow_upward,
                         ),
                         _buildMenuCard(
                           "Savings",
-                          "Rp 2.440.000",
+                          "Rp ${(totalIncome - totalExpense).toStringAsFixed(0)}",
                           Icons.attach_money,
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
 
-                    // --- SPENDING OVERVIEW (Chart Mockup) ---
+                    // SPENDING OVERVIEW
                     Container(
                       height: 180,
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        // PERBAIKAN: withValues
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -213,7 +224,6 @@ class HomePage extends StatelessWidget {
                               Text(
                                 "This Week",
                                 style: TextStyle(
-                                  // PERBAIKAN: withValues
                                   color: Colors.white.withValues(alpha: 0.6),
                                   fontSize: 12,
                                 ),
@@ -221,7 +231,6 @@ class HomePage extends StatelessWidget {
                             ],
                           ),
                           const Spacer(),
-                          // Custom Paint untuk menggambar Wave Putih
                           SizedBox(
                             height: 80,
                             width: double.infinity,
@@ -232,7 +241,7 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // --- RECENT TRANSACTIONS ---
+                    // RECENT
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -247,7 +256,6 @@ class HomePage extends StatelessWidget {
                         Text(
                           "View All",
                           style: TextStyle(
-                            // PERBAIKAN: withValues
                             color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 12,
                           ),
@@ -256,7 +264,6 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // List Item 1
                     _buildTransactionItem(
                       icon: Icons.storefront,
                       title: "Grocery Store",
@@ -266,7 +273,6 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // List Item 2
                     _buildTransactionItem(
                       icon: Icons.credit_card,
                       title: "Salary Deposit",
@@ -274,25 +280,31 @@ class HomePage extends StatelessWidget {
                       amount: "+Rp 2.500.000",
                       isExpense: false,
                     ),
-                    // Ruang ekstra di bawah agar tidak tertutup FAB/Layar
                     const SizedBox(height: 80),
                   ],
                 ),
               ),
 
-              // --- FLOATING ADD BUTTON (Link ke AddTransactionPage) ---
+              // FAB BUTTON
               Positioned(
                 bottom: 30,
                 right: 20,
                 child: FloatingActionButton(
-                  onPressed: () {
-                    // Navigasi ke Halaman Catat Transaksi
-                    Navigator.push(
+                  onPressed: () async {
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const AddTransactionPage(),
                       ),
                     );
+
+                    if (result != null) {
+                      setState(() {
+                        totalBalance = result["balance"];
+                        totalIncome = result["income"];
+                        totalExpense = result["expense"];
+                      });
+                    }
                   },
                   backgroundColor: Colors.white,
                   child: const Icon(Icons.add, color: Color(0xFF8B1D2F)),
@@ -305,7 +317,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Widget Helper: Menu Card Kecil
   Widget _buildMenuCard(String title, String amount, IconData icon) {
     return Container(
       width: 100,
@@ -345,7 +356,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Widget Helper: Transaction Item
   Widget _buildTransactionItem({
     required IconData icon,
     required String title,
@@ -402,7 +412,6 @@ class HomePage extends StatelessWidget {
   }
 }
 
-// Custom Painter untuk membuat efek ombak grafik
 class ChartWavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

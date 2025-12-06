@@ -18,88 +18,96 @@ class ProfilePage extends StatelessWidget {
             ],
           ),
         ),
-
         child: SafeArea(
           child: Stack(
             children: [
 
               // -----------------------------------------------------------
-              //  BACKGROUND BUBBLES (SAMA SEPERTI DESAIN)
+              //  FLOATING BACKGROUND BUBBLES — 100% PRESISI DARI UI
               // -----------------------------------------------------------
               Positioned(
-                top: 120,
-                left: 20,
+                top: 140,
+                left: 22,
                 child: Container(
-                  width: 14,
-                  height: 14,
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withOpacity(0.45),
                     shape: BoxShape.circle,
                   ),
                 ),
               ),
+
               Positioned(
-                top: 220,
-                right: 28,
+                top: 200,
+                right: 30,
                 child: Container(
-                  width: 70,
-                  height: 70,
+                  width: 75,
+                  height: 75,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
                 ),
               ),
+
               Positioned(
-                bottom: 140,
-                left: 40,
+                bottom: 130,
+                left: 38,
                 child: Container(
-                  width: 18,
-                  height: 18,
+                  width: 14,
+                  height: 14,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withOpacity(0.45),
                     shape: BoxShape.circle,
                   ),
                 ),
               ),
+
               Positioned(
-                bottom: 60,
-                right: 40,
+                bottom: 50,
+                right: 35,
                 child: Container(
-                  width: 90,
-                  height: 90,
+                  width: 95,
+                  height: 95,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withOpacity(0.10),
                     shape: BoxShape.circle,
                   ),
                 ),
               ),
 
               // -----------------------------------------------------------
-              //  CONTENT
+              // MAIN CONTENT
               // -----------------------------------------------------------
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 10),
 
-                  // BACK BUTTON + TITLE
+                  const SizedBox(height: 5),
+
+                  // BACK BUTTON + TEXT
                   Row(
                     children: [
                       const SizedBox(width: 16),
+
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.22),
                           ),
-                          child: const Icon(Icons.arrow_back,
-                              color: Colors.white),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
+
                       const SizedBox(width: 16),
+
                       const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -111,6 +119,7 @@ class ProfilePage extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          SizedBox(height: 2),
                           Text(
                             "Welcome to your profile",
                             style: TextStyle(
@@ -119,49 +128,52 @@ class ProfilePage extends StatelessWidget {
                             ),
                           ),
                         ],
-                      )
+                      ),
                     ],
                   ),
 
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 60),
 
-                  // PROFILE CARD
+                  // PROFILE CARD — MATCH THE UI EXACTLY
                   Center(
                     child: Container(
-                      width: 290,
+                      width: 300,
                       padding: const EdgeInsets.symmetric(
-                          vertical: 30, horizontal: 20),
+                          vertical: 32, horizontal: 20),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(26),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 12,
                             offset: const Offset(0, 4),
-                          )
+                          ),
                         ],
                       ),
                       child: Column(
                         children: [
                           const Text(
                             "Moetia Safitri Agustina",
-                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 17,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF8B1D2F),
                             ),
                           ),
-                          const SizedBox(height: 10),
+
+                          const SizedBox(height: 12),
+
                           Text(
                             "total balance",
                             style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                              fontSize: 12.5,
                             ),
                           ),
-                          const SizedBox(height: 6),
+
+                          const SizedBox(height: 8),
+
                           const Text(
                             "Rp 57.000.000",
                             style: TextStyle(
@@ -175,27 +187,29 @@ class ProfilePage extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 90),
 
-                  // LOGOUT BUTTON
+                  // LOGOUT BUTTON — 100% MATCH UI
                   Center(
                     child: Container(
-                      width: 220,
-                      height: 50,
+                      width: 230,
+                      height: 52,
                       decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
                         gradient: const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
                           colors: [
                             Color(0xFFB83246),
                             Color(0xFFA82738),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withOpacity(0.22),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
-                          )
+                          ),
                         ],
                       ),
                       child: TextButton(
@@ -206,15 +220,15 @@ class ProfilePage extends StatelessWidget {
                           "Logout",
                           style: TextStyle(
                             color: Colors.white,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
                   ),
-
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -222,4 +236,3 @@ class ProfilePage extends StatelessWidget {
     );
   }
 }
-

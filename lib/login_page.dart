@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -12,30 +13,43 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Fungsi untuk menangani login
-  void _handleLogin() {
-    // Di sini Anda bisa menambahkan logika validasi atau API call
-    String email = _emailController.text;
-    String password = _passwordController.text;
+  // ===============================
+  //     FUNGSI LOGIN FIREBASE
+  // ===============================
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-    if (email.isNotEmpty && password.isNotEmpty) {
-      // Navigasi ke halaman utama (mengganti halaman login agar tidak bisa di-back)
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all fields")),
+      );
+      return;
+    }
+
+    try {
+      // Login ke Firebase Auth
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Jika sukses → masuk ke HomePage
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
-    } else {
+    } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields")),
+        SnackBar(content: Text(e.message ?? "Login failed")),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Definisi warna sesuai gambar
-    final Color primaryRed = const Color(0xFF8B1D2F); // Merah Marun Terang
-    final Color darkRed = const Color(0xFF570F1A); // Merah Marun Gelap
+    final Color primaryRed = const Color(0xFF8B1D2F);
+    final Color darkRed = const Color(0xFF570F1A);
 
     return Scaffold(
       body: Container(
@@ -50,15 +64,11 @@ class _LoginPageState extends State<LoginPage> {
         ),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 60.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-                // --- JUDUL ATAS ---
                 const Text(
                   "Fintrack",
                   style: TextStyle(
@@ -78,13 +88,11 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // --- KARTU LOGIN ---
+                // kartu login
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(
-                      0.95,
-                    ), // Putih sedikit transparan
+                    color: Colors.white.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
@@ -111,7 +119,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 30),
 
-                      // Input Email
                       _buildTextField(
                         controller: _emailController,
                         hint: "Email address",
@@ -119,7 +126,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Input Password
                       _buildTextField(
                         controller: _passwordController,
                         hint: "Password",
@@ -128,7 +134,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Tombol Login dengan Gradient
                       Container(
                         width: double.infinity,
                         height: 50,
@@ -146,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: _handleLogin,
+                          onPressed: _handleLogin, // ← sudah terhubung
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -166,7 +171,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Forgot Password
                       GestureDetector(
                         onTap: () {},
                         child: Text(
@@ -180,7 +184,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Divider OR
                       Row(
                         children: [
                           Expanded(child: Divider(color: Colors.grey[300])),
@@ -199,14 +202,11 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Sign Up Link
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            "Don't have an account? ",
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
+                          Text("Don't have an account? ",
+                              style: TextStyle(color: Colors.grey[600])),
                           GestureDetector(
                             onTap: () {
                               Navigator.pushNamed(context, '/signup');
@@ -232,7 +232,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Widget Helper untuk Text Field agar kodenya lebih rapi
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -247,13 +246,9 @@ class _LoginPageState extends State<LoginPage> {
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey[400]),
         filled: true,
-        fillColor: Colors.grey[100], // Warna background input (abu-abu muda)
+        fillColor: Colors.grey[100],
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none, // Hilangkan garis border default
-        ),
-        enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
