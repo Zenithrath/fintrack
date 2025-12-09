@@ -710,7 +710,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Icon(
                   isIncome ? Icons.arrow_downward : Icons.shopping_bag_outlined,
-                  color: accentRed,
+                  color: isIncome ? Colors.green : accentRed,
                   size: 22,
                 ),
               ),

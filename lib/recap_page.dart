@@ -16,44 +16,22 @@ class _RecapPageState extends State<RecapPage> {
   final firestoreService = FirestoreService();
 
   late DateTime selectedMonth;
-  int _selectedTab = 0; // 0 for Income, 1 for Expenses
+  int _selectedTab = 0; // 0 = Income, 1 = Expense
 
   @override
   void initState() {
     super.initState();
-    selectedMonth = DateTime.now();
+    selectedMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
   }
 
   Future<List<TransactionRecord>> _getMonthTransactions() async {
     final userId = authService.currentUser?.uid;
     if (userId == null) return [];
 
-    final startDate = DateTime(selectedMonth.year, selectedMonth.month, 1);
-    final endDate = DateTime(selectedMonth.year, selectedMonth.month + 1, 0);
+    final start = DateTime(selectedMonth.year, selectedMonth.month, 1);
+    final end = DateTime(selectedMonth.year, selectedMonth.month + 1, 0);
 
-    return firestoreService.getTransactionsByDateRange(
-      userId,
-      startDate,
-      endDate,
-    );
-  }
-
-  void _changeMonth(int direction) {
-    setState(() {
-      if (direction > 0) {
-        selectedMonth = DateTime(
-          selectedMonth.year,
-          selectedMonth.month + 1,
-          1,
-        );
-      } else {
-        selectedMonth = DateTime(
-          selectedMonth.year,
-          selectedMonth.month - 1,
-          1,
-        );
-      }
-    });
+    return firestoreService.getTransactionsByDateRange(userId, start, end);
   }
 
   @override
@@ -64,12 +42,11 @@ class _RecapPageState extends State<RecapPage> {
 
     return Scaffold(
       body: Container(
-        height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
+            colors: [bgRed, darkRed],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [bgRed, darkRed],
           ),
         ),
         child: SafeArea(
@@ -78,7 +55,7 @@ class _RecapPageState extends State<RecapPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // HEADER
+                // HEADER ------------------------------------------------------
                 Row(
                   children: [
                     GestureDetector(
@@ -86,22 +63,21 @@ class _RecapPageState extends State<RecapPage> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
                           Icons.arrow_back_ios_new,
                           color: Colors.white,
-                          size: 18,
                         ),
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          "Financial Report",
+                          "Rekap Transaksi",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -109,83 +85,61 @@ class _RecapPageState extends State<RecapPage> {
                           ),
                         ),
                         Text(
-                          "View your monthly summary",
+                          "Lihat ringkasan bulanan",
                           style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                       ],
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 24),
 
-                // MONTH SELECTOR
+                // MONTH DROPDOWN -----------------------------------------------
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 162,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () => _changeMonth(-1),
-                        child: const Icon(
-                          Icons.chevron_left,
-                          color: Colors.white,
-                          size: 28,
-                        ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<DateTime>(
+                      value: selectedMonth,
+                      dropdownColor: Colors.black87,
+                      icon: const Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white,
                       ),
-                      Column(
-                        children: [
-                          Text(
-                            DateFormat(
-                              'MMMM yyyy',
-                              'id_ID',
-                            ).format(selectedMonth),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      style: const TextStyle(color: Colors.white),
+                      items: List.generate(24, (i) {
+                        final date = DateTime(
+                          DateTime.now().year,
+                          DateTime.now().month - i,
+                          1,
+                        );
+                        return DropdownMenuItem(
+                          value: date,
+                          child: Text(
+                            DateFormat('MMMM yyyy', 'id_ID').format(date),
+                            style: const TextStyle(color: Colors.white),
                           ),
-                          const SizedBox(height: 4),
-                          GestureDetector(
-                            onTap: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: selectedMonth,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now(),
-                              );
-                              if (picked != null) {
-                                setState(() => selectedMonth = picked);
-                              }
-                            },
-                            child: const Text(
-                              "Select Date",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      GestureDetector(
-                        onTap: () => _changeMonth(1),
-                        child: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                    ],
+                        );
+                      }),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => selectedMonth = value);
+                        }
+                      },
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
 
-                // INCOME vs EXPENSE TOGGLE
+                const SizedBox(height: 20),
+
+                // TOGGLE ------------------------------------------------------
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -201,7 +155,7 @@ class _RecapPageState extends State<RecapPage> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: _selectedTab == 0
-                                  ? const Color(0xFF22C55E)
+                                  ? Colors.green
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -247,147 +201,142 @@ class _RecapPageState extends State<RecapPage> {
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 24),
 
-                // TRANSACTIONS LIST
+                // FUTURE BUILDER ----------------------------------------------
                 FutureBuilder<List<TransactionRecord>>(
                   future: _getMonthTransactions(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Center(child: CircularProgressIndicator()),
+                  builder: (context, snap) {
+                    if (!snap.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
                       );
                     }
 
-                    if (snapshot.hasError || !snapshot.hasData) {
-                      return Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Center(
-                          child: Text("Error loading transactions"),
-                        ),
-                      );
-                    }
+                    final list = snap.data!;
+                    final incomes = list
+                        .where((t) => t.type == "income")
+                        .toList();
+                    final expenses = list
+                        .where((t) => t.type == "expense")
+                        .toList();
 
-                    // Filter based on tab
-                    final transactions = snapshot.data ?? [];
-                    final filtered = transactions.where((t) {
-                      if (_selectedTab == 0) {
-                        return t.type == 'income';
-                      } else {
-                        return t.type == 'expense';
-                      }
-                    }).toList();
+                    final totalIncome = incomes.fold(
+                      0.0,
+                      (sum, t) => sum + t.amount,
+                    );
+                    final totalExpense = expenses.fold(
+                      0.0,
+                      (sum, t) => sum + t.amount,
+                    );
+                    final netBalance = totalIncome - totalExpense;
 
-                    if (filtered.isEmpty) {
-                      return Container(
-                        padding: const EdgeInsets.all(40),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Container(
-                                height: 60,
-                                width: 60,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                "No ${_selectedTab == 0 ? 'income' : 'expenses'} found",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "for ${DateFormat('MMMM yyyy', 'id_ID').format(selectedMonth)}",
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
+                    final filtered = _selectedTab == 0 ? incomes : expenses;
 
-                    // Calculate total
-                    double total = 0;
-                    for (var t in filtered) {
-                      total += t.amount;
-                    }
-
+                    // SUMMARY CARD FIXED LAYOUT -------------------------
                     return Column(
                       children: [
-                        // TOTAL CARD
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: _selectedTab == 0
-                                ? const Color(0xFFC9F7DE)
-                                : const Color(0xFFFFE2E2),
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                "Total",
-                                style: TextStyle(
-                                  color: _selectedTab == 0
-                                      ? Colors.green
-                                      : Colors.red,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              // ALWAYS LEFT → INCOME
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Income",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "Rp ${currencyFormat.format(totalIncome)}",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                "Rp ${currencyFormat.format(total)}",
-                                style: TextStyle(
-                                  color: _selectedTab == 0
-                                      ? Colors.green
-                                      : Colors.red,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
+
+                              // ALWAYS CENTER → NET BALANCE
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    "Net Balance",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "Rp ${currencyFormat.format(netBalance)}",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: netBalance >= 0
+                                          ? Colors.green
+                                          : Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // ALWAYS RIGHT → EXPENSE
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text(
+                                    "Expenses",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "Rp ${currencyFormat.format(totalExpense)}",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
+
                         const SizedBox(height: 16),
 
-                        // TRANSACTIONS
+                        // LIST -------------------------------------------
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
                             children: filtered.map((t) {
-                              final isIncome = t.type == 'income';
-                              return Padding(
+                              final isIncome = t.type == "income";
+                              return Container(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
+                                  vertical: 10,
                                 ),
                                 child: Row(
                                   children: [
                                     CircleAvatar(
-                                      radius: 24,
+                                      radius: 22,
                                       backgroundColor: isIncome
                                           ? Colors.green
                                           : Colors.red,
@@ -408,25 +357,16 @@ class _RecapPageState extends State<RecapPage> {
                                             t.category,
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 14,
                                             ),
                                           ),
-                                          if (t.description != null &&
-                                              (t.description ?? '').isNotEmpty)
-                                            Text(
-                                              t.description!,
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12,
-                                              ),
-                                            ),
                                           Text(
                                             DateFormat(
-                                              'dd MMM yyyy HH:mm',
+                                              "dd MMM yyyy",
+                                              "id_ID",
                                             ).format(t.date),
                                             style: const TextStyle(
+                                              fontSize: 12,
                                               color: Colors.grey,
-                                              fontSize: 10,
                                             ),
                                           ),
                                         ],
@@ -435,10 +375,10 @@ class _RecapPageState extends State<RecapPage> {
                                     Text(
                                       "Rp ${currencyFormat.format(t.amount)}",
                                       style: TextStyle(
+                                        fontWeight: FontWeight.bold,
                                         color: isIncome
                                             ? Colors.green
                                             : Colors.red,
-                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ],
@@ -452,7 +392,7 @@ class _RecapPageState extends State<RecapPage> {
                   },
                 ),
 
-                const SizedBox(height: 100),
+                const SizedBox(height: 80),
               ],
             ),
           ),
