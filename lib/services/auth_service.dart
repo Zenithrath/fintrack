@@ -21,7 +21,11 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   // Register with email and password
-  Future<UserCredential> register(String email, String password, String displayName) async {
+  Future<UserCredential> register(
+    String email,
+    String password,
+    String displayName,
+  ) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -31,7 +35,7 @@ class AuthService {
       // Update profile
       await userCredential.user?.updateDisplayName(displayName);
 
-      // Create user document in Firestore
+      // Create user document in Firestore BACKGROUND (tidak perlu di-await)
       if (userCredential.user != null) {
         final newUser = UserModel(
           uid: userCredential.user!.uid,
@@ -40,7 +44,11 @@ class AuthService {
           photoUrl: userCredential.user!.photoURL,
           createdAt: DateTime.now(),
         );
-        await _firestoreService.createUser(newUser);
+        // Fire and forget - tidak tunggu selesai
+        _firestoreService.createUser(newUser).catchError((e) {
+          // Silently log error, jangan block user
+          print('Background: Firestore user creation failed: $e');
+        });
       }
 
       return userCredential;
@@ -84,7 +92,7 @@ class AuthService {
   Future<void> updateUserProfile(UserModel user) async {
     try {
       await _firestoreService.updateUser(user);
-      
+
       // Update Firebase Auth profile
       if (user.displayName != currentUser?.displayName) {
         await currentUser?.updateDisplayName(user.displayName);

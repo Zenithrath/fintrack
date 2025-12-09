@@ -14,7 +14,7 @@ class RecapPage extends StatefulWidget {
 class _RecapPageState extends State<RecapPage> {
   final authService = AuthService();
   final firestoreService = FirestoreService();
-  
+
   late DateTime selectedMonth;
   int _selectedTab = 0; // 0 for Income, 1 for Expenses
 
@@ -31,15 +31,27 @@ class _RecapPageState extends State<RecapPage> {
     final startDate = DateTime(selectedMonth.year, selectedMonth.month, 1);
     final endDate = DateTime(selectedMonth.year, selectedMonth.month + 1, 0);
 
-    return firestoreService.getTransactionsByDateRange(userId, startDate, endDate);
+    return firestoreService.getTransactionsByDateRange(
+      userId,
+      startDate,
+      endDate,
+    );
   }
 
   void _changeMonth(int direction) {
     setState(() {
       if (direction > 0) {
-        selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
+        selectedMonth = DateTime(
+          selectedMonth.year,
+          selectedMonth.month + 1,
+          1,
+        );
       } else {
-        selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1, 1);
+        selectedMonth = DateTime(
+          selectedMonth.year,
+          selectedMonth.month - 1,
+          1,
+        );
       }
     });
   }
@@ -118,12 +130,19 @@ class _RecapPageState extends State<RecapPage> {
                     children: [
                       GestureDetector(
                         onTap: () => _changeMonth(-1),
-                        child: const Icon(Icons.chevron_left, color: Colors.white, size: 28),
+                        child: const Icon(
+                          Icons.chevron_left,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ),
                       Column(
                         children: [
                           Text(
-                            DateFormat('MMMM yyyy', 'id_ID').format(selectedMonth),
+                            DateFormat(
+                              'MMMM yyyy',
+                              'id_ID',
+                            ).format(selectedMonth),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -155,7 +174,11 @@ class _RecapPageState extends State<RecapPage> {
                       ),
                       GestureDetector(
                         onTap: () => _changeMonth(1),
-                        child: const Icon(Icons.chevron_right, color: Colors.white, size: 28),
+                        child: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ),
                     ],
                   ),
@@ -177,14 +200,18 @@ class _RecapPageState extends State<RecapPage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: _selectedTab == 0 ? const Color(0xFF22C55E) : Colors.transparent,
+                              color: _selectedTab == 0
+                                  ? const Color(0xFF22C55E)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Center(
                               child: Text(
                                 "Income",
                                 style: TextStyle(
-                                  color: _selectedTab == 0 ? Colors.white : Colors.black54,
+                                  color: _selectedTab == 0
+                                      ? Colors.white
+                                      : Colors.black54,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -198,14 +225,18 @@ class _RecapPageState extends State<RecapPage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: _selectedTab == 1 ? Colors.redAccent : Colors.transparent,
+                              color: _selectedTab == 1
+                                  ? Colors.redAccent
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Center(
                               child: Text(
                                 "Expenses",
                                 style: TextStyle(
-                                  color: _selectedTab == 1 ? Colors.white : Colors.black54,
+                                  color: _selectedTab == 1
+                                      ? Colors.white
+                                      : Colors.black54,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -229,9 +260,7 @@ class _RecapPageState extends State<RecapPage> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                        child: const Center(child: CircularProgressIndicator()),
                       );
                     }
 
@@ -279,12 +308,17 @@ class _RecapPageState extends State<RecapPage> {
                               const SizedBox(height: 12),
                               Text(
                                 "No ${_selectedTab == 0 ? 'income' : 'expenses'} found",
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 "for ${DateFormat('MMMM yyyy', 'id_ID').format(selectedMonth)}",
-                                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
@@ -315,16 +349,18 @@ class _RecapPageState extends State<RecapPage> {
                               Text(
                                 "Total",
                                 style: TextStyle(
-                                  color:
-                                      _selectedTab == 0 ? Colors.green : Colors.red,
+                                  color: _selectedTab == 0
+                                      ? Colors.green
+                                      : Colors.red,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Text(
                                 "Rp ${currencyFormat.format(total)}",
                                 style: TextStyle(
-                                  color:
-                                      _selectedTab == 0 ? Colors.green : Colors.red,
+                                  color: _selectedTab == 0
+                                      ? Colors.green
+                                      : Colors.red,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
                                 ),
@@ -345,13 +381,16 @@ class _RecapPageState extends State<RecapPage> {
                             children: filtered.map((t) {
                               final isIncome = t.type == 'income';
                               return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 child: Row(
                                   children: [
                                     CircleAvatar(
                                       radius: 24,
-                                      backgroundColor:
-                                          isIncome ? Colors.green : Colors.red,
+                                      backgroundColor: isIncome
+                                          ? Colors.green
+                                          : Colors.red,
                                       child: Icon(
                                         isIncome
                                             ? Icons.arrow_downward
@@ -382,8 +421,9 @@ class _RecapPageState extends State<RecapPage> {
                                               ),
                                             ),
                                           Text(
-                                            DateFormat('dd MMM yyyy HH:mm')
-                                                .format(t.date),
+                                            DateFormat(
+                                              'dd MMM yyyy HH:mm',
+                                            ).format(t.date),
                                             style: const TextStyle(
                                               color: Colors.grey,
                                               fontSize: 10,
@@ -395,8 +435,9 @@ class _RecapPageState extends State<RecapPage> {
                                     Text(
                                       "Rp ${currencyFormat.format(t.amount)}",
                                       style: TextStyle(
-                                        color:
-                                            isIncome ? Colors.green : Colors.red,
+                                        color: isIncome
+                                            ? Colors.green
+                                            : Colors.red,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),

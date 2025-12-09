@@ -3,15 +3,20 @@
 ## ✅ Yang Sudah Disetup
 
 ### 1. **Firestore Database**
+
 - Cloud Firestore sudah ditambahkan ke pubspec.yaml
 - Dependencies yang compatible sudah installed
 
 ### 2. **Services Layer**
+
 Sudah dibuat 3 service file untuk handle backend logic:
 
 #### a. **FirestoreService** (`lib/services/firestore_service.dart`)
+
 Main service untuk semua operasi Firestore:
+
 - **User Operations**
+
   - `createUser()` - Create user document
   - `getUser()` - Get user profile
   - `updateUser()` - Update user profile
@@ -27,7 +32,9 @@ Main service untuk semua operasi Firestore:
   - `getMonthlyStats()` - Get income/expense summary
 
 #### b. **AuthService** (`lib/services/auth_service.dart`)
+
 Handle authentication:
+
 - `register()` - Register user baru
 - `login()` - Login user
 - `logout()` - Logout
@@ -37,6 +44,7 @@ Handle authentication:
 - `authStateChanges` - Stream untuk auth state changes
 
 #### c. **Models**
+
 - **UserModel** (`lib/models/user_model.dart`) - User data structure
 - **TransactionModel** (`lib/models/transaction_model.dart`) - Transaction data structure
 
@@ -65,6 +73,7 @@ transactions/
 ## 🚀 Cara Menggunakan
 
 ### 1. **Register User**
+
 ```dart
 import 'package:fintrack/services/auth_service.dart';
 
@@ -77,11 +86,13 @@ await authService.register(
 ```
 
 ### 2. **Login**
+
 ```dart
 await authService.login('user@example.com', 'password123');
 ```
 
 ### 3. **Add Transaction**
+
 ```dart
 import 'package:fintrack/services/firestore_service.dart';
 import 'package:fintrack/models/transaction_model.dart';
@@ -103,6 +114,7 @@ final docId = await firestoreService.addTransaction(transaction);
 ```
 
 ### 4. **Get All Transactions (Real-time)**
+
 ```dart
 // Listen untuk real-time updates
 final userId = authService.currentUser?.uid ?? '';
@@ -114,6 +126,7 @@ firestoreService.getTransactionsByUserStream(userId).listen((transactions) {
 ```
 
 ### 5. **Get Monthly Stats**
+
 ```dart
 final stats = await firestoreService.getMonthlyStats(userId, DateTime.now());
 print('Income: ${stats['income']}');
@@ -133,7 +146,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
-    
+
     // Transactions collection - user hanya bisa akses transaction miliknya
     match /transactions/{document=**} {
       allow read, write: if request.auth.uid == resource.data.userId;

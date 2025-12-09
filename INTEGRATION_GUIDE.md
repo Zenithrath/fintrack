@@ -1,6 +1,7 @@
 # Firebase Integration Complete ✅
 
 ## Overview
+
 Firebase backend sudah fully integrated dengan Flutter app. Berikut adalah apa yang sudah di-setup:
 
 ## 📁 File Structure
@@ -22,6 +23,7 @@ lib/
 ## 🔐 Authentication Flow
 
 ### Login Page (`login_page.dart`)
+
 ```dart
 final authService = AuthService();
 await authService.login(email, password);
@@ -29,6 +31,7 @@ await authService.login(email, password);
 ```
 
 ### Sign Up Page (`signup_page.dart`)
+
 ```dart
 final authService = AuthService();
 await authService.register(email, password, displayName);
@@ -38,6 +41,7 @@ await authService.register(email, password, displayName);
 ## 💾 Transaction Management
 
 ### Add Transaction (`add_transaction_page.dart`)
+
 ```dart
 final firestoreService = FirestoreService();
 final userId = authService.currentUser?.uid;
@@ -56,6 +60,7 @@ await firestoreService.addTransaction(transaction);
 ```
 
 ### Real-time Transaction Updates
+
 ```dart
 firestoreService.getTransactionsByUserStream(userId).listen((transactions) {
   // Setiap kali ada perubahan, list otomatis update
@@ -68,10 +73,12 @@ firestoreService.getTransactionsByUserStream(userId).listen((transactions) {
 ## 🗄️ Firestore Database Structure
 
 **Collections:**
+
 - `users/{uid}` - User profiles
 - `transactions/{docId}` - Transaction records
 
 **User Document:**
+
 ```json
 {
   "uid": "string",
@@ -83,6 +90,7 @@ firestoreService.getTransactionsByUserStream(userId).listen((transactions) {
 ```
 
 **Transaction Document:**
+
 ```json
 {
   "userId": "uid_of_user",
@@ -98,6 +106,7 @@ firestoreService.getTransactionsByUserStream(userId).listen((transactions) {
 ## 🛡️ Firebase Security Rules
 
 Sudah di-configure di Firebase Console:
+
 ```json
 rules_version = '2';
 service cloud.firestore {
@@ -106,7 +115,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
-    
+
     // Transactions - User hanya bisa akses transaction miliknya
     match /transactions/{document=**} {
       allow read, write: if request.auth.uid == resource.data.userId;
@@ -119,12 +128,14 @@ service cloud.firestore {
 ## 📊 Key Features Implemented
 
 ✅ **User Authentication**
+
 - Register dengan email & password
 - Login & logout
 - Password reset
 - User profile management
 
 ✅ **Transaction Management**
+
 - Add income/expense
 - Real-time updates dengan Stream
 - Filter by category
@@ -133,6 +144,7 @@ service cloud.firestore {
 - Delete transactions
 
 ✅ **Data Persistence**
+
 - All data saved to Firestore
 - Real-time sync across devices
 - Offline capability (dengan Firebase cache)
@@ -140,6 +152,7 @@ service cloud.firestore {
 ## 🚀 Available Methods
 
 ### AuthService
+
 ```dart
 final authService = AuthService();
 
@@ -159,6 +172,7 @@ User? currentUser = authService.currentUser;
 ```
 
 ### FirestoreService
+
 ```dart
 final firestoreService = FirestoreService();
 
@@ -181,17 +195,20 @@ Map<String, double> stats = await firestoreService.getMonthlyStats(userId, DateT
 ## 📝 Testing the Integration
 
 1. **Build & Run**
+
    ```bash
    flutter pub get
    flutter run
    ```
 
 2. **Test Sign Up**
+
    - Go to Sign Up page
    - Enter email, password, dan name
    - Check Firestore console - user document should appear
 
 3. **Test Add Transaction**
+
    - After login, go to Add Transaction page
    - Add income/expense
    - Data should appear di Firestore instantly

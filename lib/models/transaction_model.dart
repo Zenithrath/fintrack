@@ -33,7 +33,10 @@ class TransactionRecord {
   }
 
   // Create from Firestore document
-  factory TransactionRecord.fromMap(Map<String, dynamic> map, String documentId) {
+  factory TransactionRecord.fromMap(
+    Map<String, dynamic> map,
+    String documentId,
+  ) {
     return TransactionRecord(
       id: documentId,
       userId: map['userId'] ?? '',

@@ -13,7 +13,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool isLoading = false;
   String? emailError, usernameError, passwordError, confirmPasswordError;
 
@@ -91,27 +91,26 @@ class _SignUpPageState extends State<SignUpPage> {
       final password = _passwordController.text.trim();
 
       final authService = AuthService();
+
+      // Register (fast - no await for Firestore write)
       await authService.register(email, password, username);
 
       if (mounted) {
-        // Success dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text("Sukses!"),
-            content: const Text("Akun berhasil dibuat. Silakan login dengan email dan password Anda."),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, '/login');
-                },
-                child: const Text("Lanjut ke Login"),
-              ),
-            ],
+        // Success - langsung ke login tanpa dialog (lebih cepat)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Akun berhasil dibuat! Silakan login."),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.green,
           ),
         );
+
+        // Langsung ke login page
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/login');
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -122,20 +121,12 @@ class _SignUpPageState extends State<SignUpPage> {
           errorMsg = 'Email tidak valid';
         } else if (errorMsg.contains('weak-password')) {
           errorMsg = 'Password terlalu lemah';
+        } else if (errorMsg.contains('network')) {
+          errorMsg = 'Error jaringan - cek koneksi internet';
         }
 
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("Gagal Mendaftar"),
-            content: Text(errorMsg),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
-              ),
-            ],
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
       }
     } finally {
