@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:fintrack/services/firestore_service.dart';
+import 'package:fintrack/services/auth_service.dart';
+import 'package:fintrack/models/transaction_model.dart';
 
 class AddTransactionPage extends StatefulWidget {
   const AddTransactionPage({super.key});
@@ -10,10 +13,13 @@ class AddTransactionPage extends StatefulWidget {
 
 class _AddTransactionPageState extends State<AddTransactionPage> {
   bool isIncome = true;
+  bool isLoading = false;
 
   // Kontroler form
   final TextEditingController amountController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
+  final firestoreService = FirestoreService();
+  final authService = AuthService();
 
   // Category
   String? selectedCategory;
@@ -24,8 +30,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     "Others",
   ];
 
-  // Data lokal untuk history (in-memory). Format: {amount, category, note, isIncome, date}
-  final List<Map<String, dynamic>> transactions = [];
+  // Data dari Firestore
+  final List<TransactionRecord> transactions = [];
 
   // Totals
   double totalBalance = 0.0;
@@ -35,17 +41,60 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _currencyFormat = NumberFormat('#,##0', 'en_US');
 
   @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  @override
   void dispose() {
     amountController.dispose();
     noteController.dispose();
     super.dispose();
   }
 
+  // Load transactions from Firestore
+  void _loadTransactions() {
+    final userId = authService.currentUser?.uid;
+    if (userId == null) {
+      _showSnack("User not authenticated");
+      return;
+    }
+
+    firestoreService.getTransactionsByUserStream(userId).listen((newTransactions) {
+      if (mounted) {
+        setState(() {
+          transactions.clear();
+          transactions.addAll(newTransactions);
+          _calculateTotals();
+        });
+      }
+    }, onError: (error) {
+      _showSnack("Error loading transactions: $error");
+    });
+  }
+
+  // Calculate totals
+  void _calculateTotals() {
+    totalIncome = 0;
+    totalExpense = 0;
+    totalBalance = 0;
+
+    for (var transaction in transactions) {
+      if (transaction.type == 'income') {
+        totalIncome += transaction.amount;
+      } else {
+        totalExpense += transaction.amount;
+      }
+    }
+    totalBalance = totalIncome - totalExpense;
+  }
+
   String _formatCurrency(double value) {
     return "Rp ${_currencyFormat.format(value)}";
   }
 
-  void _addTransaction() {
+  void _addTransaction() async {
     final raw = amountController.text.trim();
     if (raw.isEmpty) {
       _showSnack("Isi amount terlebih dahulu");
@@ -64,31 +113,43 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       return;
     }
 
-    final entry = {
-      'amount': amount,
-      'category': selectedCategory!,
-      'note': noteController.text.trim(),
-      'isIncome': isIncome,
-      'date': DateTime.now().toIso8601String(),
-    };
+    final userId = authService.currentUser?.uid;
+    if (userId == null) {
+      _showSnack("User not authenticated");
+      return;
+    }
 
-    setState(() {
-      transactions.insert(0, entry); // newest first
-      if (isIncome) {
-        totalIncome += amount;
-        totalBalance += amount;
-      } else {
-        totalExpense += amount;
-        totalBalance -= amount;
+    setState(() => isLoading = true);
+
+    try {
+      final newTransaction = TransactionRecord(
+        userId: userId,
+        title: selectedCategory ?? 'Transaction',
+        amount: amount,
+        category: selectedCategory ?? '',
+        date: DateTime.now(),
+        description: noteController.text.trim(),
+        type: isIncome ? 'income' : 'expense',
+      );
+
+      await firestoreService.addTransaction(newTransaction);
+
+      if (mounted) {
+        // Reset form
+        amountController.clear();
+        noteController.clear();
+        setState(() {
+          selectedCategory = null;
+          isLoading = false;
+        });
+        _showSnack("Transaksi berhasil ditambahkan");
       }
-
-      // reset form
-      amountController.clear();
-      noteController.clear();
-      selectedCategory = null;
-    });
-
-    _showSnack("Transaksi berhasil ditambahkan");
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        _showSnack("Error: $e");
+      }
+    }
   }
 
   void _showSnack(String text) {
@@ -248,9 +309,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       ),
       child: Column(
         children: transactions.map((t) {
-          final amt = t['amount'] as double;
-          final isInc = t['isIncome'] as bool;
-          final date = DateTime.parse(t['date'] as String);
+          final amt = t.amount;
+          final isInc = t.type == 'income';
+          final date = t.date;
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
@@ -265,9 +326,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(t['category'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      if ((t['note'] as String).isNotEmpty)
-                        Text(t['note'], style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text(t.category, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (t.description != null && (t.description ?? '').isNotEmpty)
+                        Text(t.description ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                       Text(DateFormat('dd MMM yyyy HH:mm').format(date), style: const TextStyle(color: Colors.grey, fontSize: 11)),
                     ],
                   ),
@@ -505,7 +566,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _addTransaction,
+                          onPressed: isLoading ? null : _addTransaction,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isIncome ? activeGreen : Colors.redAccent,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -513,13 +574,22 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: Text(
-                            isIncome ? "Add Income" : "Add Expense",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  isIncome ? "Add Income" : "Add Expense",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

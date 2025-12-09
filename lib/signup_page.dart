@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fintrack/services/auth_service.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -18,28 +18,31 @@ class _SignUpPageState extends State<SignUpPage> {
     try {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
+      final displayName = _phoneController.text.trim();
 
-      if (email.isEmpty || password.isEmpty) {
+      if (email.isEmpty || password.isEmpty || displayName.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Email dan password wajib diisi")),
+          const SnackBar(content: Text("Email, password, dan nama wajib diisi")),
         );
         return;
       }
 
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final authService = AuthService();
+      await authService.register(email, password, displayName);
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Akun berhasil dibuat!")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Akun berhasil dibuat!")),
+        );
 
-      Navigator.pushReplacementNamed(context, '/login');
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message ?? "Terjadi kesalahan")));
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 
