@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:fintrack/services/firestore_service.dart';
+import 'package:fintrack/services/auth_service.dart';
+import 'package:fintrack/models/transaction_model.dart';
 
 class RecapPage extends StatefulWidget {
   const RecapPage({super.key});
@@ -8,13 +12,43 @@ class RecapPage extends StatefulWidget {
 }
 
 class _RecapPageState extends State<RecapPage> {
-  int _selectedIndex = 0; // 0 for Income, 1 for Expenses
+  final authService = AuthService();
+  final firestoreService = FirestoreService();
+  
+  late DateTime selectedMonth;
+  int _selectedTab = 0; // 0 for Income, 1 for Expenses
+
+  @override
+  void initState() {
+    super.initState();
+    selectedMonth = DateTime.now();
+  }
+
+  Future<List<TransactionRecord>> _getMonthTransactions() async {
+    final userId = authService.currentUser?.uid;
+    if (userId == null) return [];
+
+    final startDate = DateTime(selectedMonth.year, selectedMonth.month, 1);
+    final endDate = DateTime(selectedMonth.year, selectedMonth.month + 1, 0);
+
+    return firestoreService.getTransactionsByDateRange(userId, startDate, endDate);
+  }
+
+  void _changeMonth(int direction) {
+    setState(() {
+      if (direction > 0) {
+        selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
+      } else {
+        selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1, 1);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final Color bgRed = const Color(0xFF8B1D2F);
     final Color darkRed = const Color(0xFF570F1A);
-    final Color greenColor = const Color(0xFF22C55E);
+    final currencyFormat = NumberFormat('#,##0', 'en_US');
 
     return Scaffold(
       body: Container(
@@ -32,7 +66,7 @@ class _RecapPageState extends State<RecapPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- HEADER ---
+                // HEADER
                 Row(
                   children: [
                     GestureDetector(
@@ -51,238 +85,337 @@ class _RecapPageState extends State<RecapPage> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
-                      "Rekap Transaksi",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          "Financial Report",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          "View your monthly summary",
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
 
-                // --- DATE FILTER ---
-                const Text(
-                  "Select Month & Year",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                // MONTH SELECTOR
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _changeMonth(-1),
+                        child: const Icon(Icons.chevron_left, color: Colors.white, size: 28),
+                      ),
+                      Column(
+                        children: [
+                          Text(
+                            DateFormat('MMMM yyyy', 'id_ID').format(selectedMonth),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedMonth,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime.now(),
+                              );
+                              if (picked != null) {
+                                setState(() => selectedMonth = picked);
+                              }
+                            },
+                            child: const Text(
+                              "Select Date",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      GestureDetector(
+                        onTap: () => _changeMonth(1),
+                        child: const Icon(Icons.chevron_right, color: Colors.white, size: 28),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 24),
+
+                // INCOME vs EXPENSE TOGGLE
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
-                    children: const [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 20,
-                        color: Colors.blueAccent,
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        "September 2025",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Spacer(),
-                      Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // --- TABS (Income / Expense) DENGAN WRAPPER ---
-                // Ini bagian yang diperbaiki
-                Container(
-                  padding: const EdgeInsets.all(
-                    4,
-                  ), // Jarak antara border putih dan tombol
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Warna dasar pembungkus
-                    borderRadius: BorderRadius.circular(30), // Sudut membulat
-                  ),
-                  child: Row(
                     children: [
-                      Expanded(child: _buildTabButton("Income", 0, greenColor)),
                       Expanded(
-                        // Gunakan sedikit space jika mau, atau langsung nempel
-                        child: _buildTabButton("Expenses", 1, Colors.white),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 0 ? const Color(0xFF22C55E) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text(
+                                "Income",
+                                style: TextStyle(
+                                  color: _selectedTab == 0 ? Colors.white : Colors.black54,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 1 ? Colors.redAccent : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text(
+                                "Expenses",
+                                style: TextStyle(
+                                  color: _selectedTab == 1 ? Colors.white : Colors.black54,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // --- SUMMARY CARD ---
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Total Income",
-                            style: TextStyle(fontSize: 11, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "+Rp.00",
-                            style: TextStyle(
-                              color: greenColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: const [
-                          Text(
-                            "Net Balance",
-                            style: TextStyle(fontSize: 11, color: Colors.grey),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            "+Rp.00",
-                            style: TextStyle(
-                              color: Colors.blueAccent,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
+                // TRANSACTIONS LIST
+                FutureBuilder<List<TransactionRecord>>(
+                  future: _getMonthTransactions(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
 
-                // --- TRANSACTION LIST ITEMS ---
-                _buildListItem(
-                  "Monthly Salary",
-                  "Sept 1, 2025",
-                  "+Rp 10.000.000",
-                  const Color(0xFFE0F7EA),
-                  greenColor,
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
+                          child: Text("Error loading transactions"),
+                        ),
+                      );
+                    }
+
+                    // Filter based on tab
+                    final transactions = snapshot.data ?? [];
+                    final filtered = transactions.where((t) {
+                      if (_selectedTab == 0) {
+                        return t.type == 'income';
+                      } else {
+                        return t.type == 'expense';
+                      }
+                    }).toList();
+
+                    if (filtered.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(40),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Container(
+                                height: 60,
+                                width: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                "No ${_selectedTab == 0 ? 'income' : 'expenses'} found",
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "for ${DateFormat('MMMM yyyy', 'id_ID').format(selectedMonth)}",
+                                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    // Calculate total
+                    double total = 0;
+                    for (var t in filtered) {
+                      total += t.amount;
+                    }
+
+                    return Column(
+                      children: [
+                        // TOTAL CARD
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: _selectedTab == 0
+                                ? const Color(0xFFC9F7DE)
+                                : const Color(0xFFFFE2E2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Total",
+                                style: TextStyle(
+                                  color:
+                                      _selectedTab == 0 ? Colors.green : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "Rp ${currencyFormat.format(total)}",
+                                style: TextStyle(
+                                  color:
+                                      _selectedTab == 0 ? Colors.green : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // TRANSACTIONS
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: filtered.map((t) {
+                              final isIncome = t.type == 'income';
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 24,
+                                      backgroundColor:
+                                          isIncome ? Colors.green : Colors.red,
+                                      child: Icon(
+                                        isIncome
+                                            ? Icons.arrow_downward
+                                            : Icons.arrow_upward,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            t.category,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          if (t.description != null &&
+                                              (t.description ?? '').isNotEmpty)
+                                            Text(
+                                              t.description!,
+                                              style: const TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          Text(
+                                            DateFormat('dd MMM yyyy HH:mm')
+                                                .format(t.date),
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      "Rp ${currencyFormat.format(t.amount)}",
+                                      style: TextStyle(
+                                        color:
+                                            isIncome ? Colors.green : Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-                const SizedBox(height: 12),
-                _buildListItem(
-                  "Freelance Project",
-                  "Sept 5, 2025",
-                  "+Rp 1.500.000",
-                  const Color(0xFFE3F2FD),
-                  Colors.blue,
-                ),
+
+                const SizedBox(height: 100),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  // Widget Button Tab yang sudah disesuaikan
-  Widget _buildTabButton(String title, int index, Color activeColor) {
-    bool isSelected = _selectedIndex == index;
-
-    // Warna teks: Kalau expense dipilih (index 1), teksnya hitam (karena background putih/transparent)
-    // Tapi kalau di desain mockup, expense juga punya warna background sendiri kalau aktif?
-    // Jika melihat mockup:
-    // Income Aktif -> Background Hijau, Teks Putih.
-    // Expense Aktif (di mockup sebelah kiri) -> Background Putih, Teks Hitam/Abu.
-    // Jadi logikanya: Tombol aktif punya background warna, tombol tidak aktif transparan.
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          // Jika dipilih, gunakan warna aktif. Jika tidak, transparan.
-          color: isSelected
-              ? (index == 0 ? activeColor : Colors.white)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(25),
-          // Tambahkan shadow atau border jika expense aktif agar terlihat beda dengan background wrapper?
-          // Sesuai mockup, expense (sebelah kanan) saat tidak aktif hanya text saja.
-        ),
-        child: Center(
-          child: Text(
-            title,
-            style: TextStyle(
-              // Logika warna teks
-              color: isSelected
-                  ? (index == 0 ? Colors.white : Colors.black87)
-                  : Colors.grey,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildListItem(
-    String title,
-    String date,
-    String amount,
-    Color iconBg,
-    Color amountColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            height: 45,
-            width: 45,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(
-                date,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            amount,
-            style: TextStyle(
-              color: amountColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ],
       ),
     );
   }

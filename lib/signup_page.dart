@@ -10,38 +10,137 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  
+  bool isLoading = false;
+  String? emailError, usernameError, passwordError, confirmPasswordError;
 
-  // 🟢🔥 FUNCTION SIGN UP (DITAMBAHKAN)
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  // Validate form
+  bool _validateForm() {
+    setState(() {
+      emailError = null;
+      usernameError = null;
+      passwordError = null;
+      confirmPasswordError = null;
+    });
+
+    bool isValid = true;
+
+    final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (email.isEmpty) {
+      setState(() => emailError = "Email wajib diisi");
+      isValid = false;
+    } else if (!email.contains('@')) {
+      setState(() => emailError = "Email tidak valid");
+      isValid = false;
+    }
+
+    if (username.isEmpty) {
+      setState(() => usernameError = "Username wajib diisi");
+      isValid = false;
+    } else if (username.length < 3) {
+      setState(() => usernameError = "Username minimal 3 karakter");
+      isValid = false;
+    }
+
+    if (password.isEmpty) {
+      setState(() => passwordError = "Password wajib diisi");
+      isValid = false;
+    } else if (password.length < 6) {
+      setState(() => passwordError = "Password minimal 6 karakter");
+      isValid = false;
+    }
+
+    if (confirmPassword.isEmpty) {
+      setState(() => confirmPasswordError = "Konfirmasi password wajib diisi");
+      isValid = false;
+    } else if (password != confirmPassword) {
+      setState(() => confirmPasswordError = "Password tidak cocok");
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  // Sign Up Function
   Future<void> signUp() async {
+    if (!_validateForm()) {
+      return;
+    }
+
+    setState(() => isLoading = true);
+
     try {
       final email = _emailController.text.trim();
+      final username = _usernameController.text.trim();
       final password = _passwordController.text.trim();
-      final displayName = _phoneController.text.trim();
-
-      if (email.isEmpty || password.isEmpty || displayName.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Email, password, dan nama wajib diisi")),
-        );
-        return;
-      }
 
       final authService = AuthService();
-      await authService.register(email, password, displayName);
+      await authService.register(email, password, username);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Akun berhasil dibuat!")),
+        // Success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text("Sukses!"),
+            content: const Text("Akun berhasil dibuat. Silakan login dengan email dan password Anda."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/login');
+                },
+                child: const Text("Lanjut ke Login"),
+              ),
+            ],
+          ),
         );
-
-        Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+        String errorMsg = e.toString();
+        if (errorMsg.contains('email-already-in-use')) {
+          errorMsg = 'Email sudah terdaftar';
+        } else if (errorMsg.contains('invalid-email')) {
+          errorMsg = 'Email tidak valid';
+        } else if (errorMsg.contains('weak-password')) {
+          errorMsg = 'Password terlalu lemah';
+        }
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Gagal Mendaftar"),
+            content: Text(errorMsg),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
       }
     }
   }
@@ -126,14 +225,16 @@ class _SignUpPageState extends State<SignUpPage> {
                         hint: "Email address",
                         icon: Icons.alternate_email,
                         controller: _emailController,
+                        errorText: emailError,
                       ),
                       const SizedBox(height: 16),
 
-                      // Phone Field
+                      // Username Field
                       _buildField(
-                        hint: "Phone",
-                        icon: Icons.phone_outlined,
-                        controller: _phoneController,
+                        hint: "Username",
+                        icon: Icons.person_outline,
+                        controller: _usernameController,
+                        errorText: usernameError,
                       ),
                       const SizedBox(height: 16),
 
@@ -143,10 +244,21 @@ class _SignUpPageState extends State<SignUpPage> {
                         icon: Icons.lock_outline,
                         isPassword: true,
                         controller: _passwordController,
+                        errorText: passwordError,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Confirm Password Field
+                      _buildField(
+                        hint: "Confirm Password",
+                        icon: Icons.lock_outline,
+                        isPassword: true,
+                        controller: _confirmPasswordController,
+                        errorText: confirmPasswordError,
                       ),
                       const SizedBox(height: 30),
 
-                      // Sign Up Button (DIUBAH 1 BARIS)
+                      // Sign Up Button
                       Container(
                         width: double.infinity,
                         height: 52,
@@ -157,7 +269,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                         ),
                         child: ElevatedButton(
-                          onPressed: signUp, // 🔥 panggil function signUp
+                          onPressed: isLoading ? null : signUp,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -165,14 +277,23 @@ class _SignUpPageState extends State<SignUpPage> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: const Text(
-                            "Sign Up",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  "Sign Up",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 25),
@@ -233,22 +354,53 @@ class _SignUpPageState extends State<SignUpPage> {
     required IconData icon,
     required TextEditingController controller,
     bool isPassword = false,
+    String? errorText,
   }) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.grey[100],
-        hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey[500]),
-        prefixIcon: Icon(icon, color: Colors.grey[600]),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          obscureText: isPassword,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: errorText != null ? Colors.red[50] : Colors.grey[100],
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            prefixIcon: Icon(icon, color: Colors.grey[600]),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: errorText != null ? Colors.red : Colors.transparent,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: errorText != null ? Colors.red : Colors.transparent,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: errorText != null ? Colors.red : const Color(0xFF8B1D2F),
+              ),
+            ),
+          ),
         ),
-      ),
+        if (errorText != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            errorText,
+            style: const TextStyle(
+              color: Colors.red,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
